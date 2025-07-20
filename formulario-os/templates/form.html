@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Ordem de Serviço</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 700px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #0056b3; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        input[type="file"] { padding: 5px; }
+        button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        .readonly { background-color: #e9ecef; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Relatório de Serviço Técnico</h1>
+        <form action="/submit" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="protocolo">Protocolo/Assistência</label>
+                <input type="text" id="protocolo" name="protocolo" value="{{ protocolo }}" class="readonly" readonly>
+            </div>
+            <div class="form-group">
+                <label for="nome_cliente">Cliente</label>
+                <input type="text" id="nome_cliente" name="nome_cliente" value="{{ nome_cliente }}" class="readonly" readonly>
+            </div>
+            <div class="form-group">
+                <label for="endereco">Endereço</label>
+                <input type="text" id="endereco" name="endereco" value="{{ endereco }}" class="readonly" readonly>
+            </div>
+            <div class="form-group">
+                <label for="nome_tecnico">Seu nome completo</label>
+                <input type="text" id="nome_tecnico" name="nome_tecnico" value="{{ nome_tecnico }}" required>
+            </div>
+            <div class="form-group">
+                <label for="servico_executado">Descrição do serviço executado</label>
+                <textarea id="servico_executado" name="servico_executado" rows="6" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="senha_cliente">Senha do cliente (se aplicável)</label>
+                <input type="text" id="senha_cliente" name="senha_cliente">
+            </div>
+            <div class="form-group">
+                <label for="foto_servico">Foto do serviço executado</label>
+                <input type="file" id="foto_servico" name="foto_servico" accept="image/*" required>
+            </div>
+            <div class="form-group">
+                <label for="foto_documento">Foto da assinatura/documento do cliente</label>
+                <input type="file" id="foto_documento" name="foto_documento" accept="image/*" required>
+            </div>
+            <button type="submit">Enviar Resposta</button>
+        </form>
+    </div>
+</body>
+</html>
