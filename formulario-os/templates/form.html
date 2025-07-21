@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulário de Ordem de Serviço</title>
+    <title>Relatório do Serviço</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 20px; }
         .container { max-width: 700px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -12,14 +12,15 @@
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         input[type="file"] { padding: 5px; }
-        button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
         button:hover { background-color: #0056b3; }
         .readonly { background-color: #e9ecef; }
+        .footer { text-align: center; margin-top: 25px; font-size: 0.9em; color: #777; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Relatório de Serviço Técnico</h1>
+        <h1>Relatório do Serviço</h1>
         <form action="/submit" method="post" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="protocolo">Protocolo/Assistência</label>
@@ -42,7 +43,7 @@
                 <textarea id="servico_executado" name="servico_executado" rows="6" required></textarea>
             </div>
             <div class="form-group">
-                <label for="senha_cliente">Senha do cliente (se aplicável)</label>
+                <label for="senha_cliente">Senha do cliente</label>
                 <input type="text" id="senha_cliente" name="senha_cliente">
             </div>
             <div class="form-group">
@@ -53,8 +54,11 @@
                 <label for="foto_documento">Foto da assinatura/documento do cliente</label>
                 <input type="file" id="foto_documento" name="foto_documento" accept="image/*" required>
             </div>
-            <button type="submit">Enviar Resposta</button>
+            <button type="submit">Finalizar serviço</button>
         </form>
+        <div class="footer">
+            <p>© Wrubleski</p>
+        </div>
     </div>
 </body>
 </html>
