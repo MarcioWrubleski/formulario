@@ -1,0 +1,5 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><title>Admin</title><style>body{font-family: sans-serif; background: #f4f4f9;} .admin-box{width: 500px; margin: 50px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);} button{padding: 10px 20px; margin-top: 15px;}</style></head>
+<body><div class="admin-box"><h1>Gerir Respostas</h1><p>Atualmente existem <strong>{{ num_lines }}</strong> respostas no ficheiro.</p><hr><h3>Apagar Respostas Antigas</h3><p>Selecione uma data. Todas as respostas <strong>anteriores</strong> a esta data serão apagadas permanentemente.</p><form action="/admin/clear" method="post"><label for="cutoff_date">Apagar registos antes de:</label><input type="date" id="cutoff_date" name="cutoff_date" required><input type="hidden" name="password" value="{{ request.form.password }}"><br><button type="submit" onclick="return confirm('Tem a certeza que deseja apagar os registos antigos? Esta ação não pode ser desfeita.')">Apagar Registos Antigos</button></form></div></body>
+</html>
