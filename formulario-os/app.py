@@ -17,12 +17,20 @@ ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 CSV_FILE_PATH = 'submissions.csv'
 UPLOAD_FOLDER_PATH = 'uploads'
 
+# Validação inicial das variáveis de ambiente
+if not all([GITHUB_TOKEN, GITHUB_REPO, ADMIN_PASSWORD]):
+    print("ERRO: Variáveis de ambiente GITHUB_TOKEN, GITHUB_REPO, e ADMIN_PASSWORD são obrigatórias.")
+    # Esta parte não irá parar o Render, mas irá registar o erro
+
 g = Github(GITHUB_TOKEN)
 repo = g.get_repo(GITHUB_REPO)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 # --- Templates HTML incorporados ---
+FORM_TEMPLATE = """
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Relatório do Serviço</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background-color:#f4f4f9;color:#333;margin:0;padding:20px}.container{max-width:700px;margin:auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.1)}h1{color:#0056b3}.form-group{margin-bottom:15px}label{display:block;margin-bottom:5px;font-weight:700}input[type=text],textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box}input[type=file]{padding:5px}button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:4px;cursor:pointer;font-size:16px;width:100%}button:hover{background-color:#0056b3}.readonly{background-color:#e9ecef}.footer{text-align:center;margin-top:25px;font-size:.9em;color:#777}</style></head><body><div class="container"><h1>Relatório do Serviço</h1><form action="/submit" method="post" enctype="multipart/form-data"><div class="form-group"><label for="protocolo">Protocolo/Assistência</label><input type="text" id="protocolo" name="protocolo" value="{{ protocolo }}" class="readonly" readonly></div><div class="form-group"><label for="nome_cliente">Cliente</label><input type="text" id="nome_cliente" name="nome_cliente" value="{{ nome_cliente }}" class="readonly" readonly></div><div class="form-group"><label for="endereco">Endereço</label><input type="text" id="endereco" name="endereco" value="{{ endereco }}" class="readonly" readonly></div><div class="form-group"><label for="nome_tecnico">Seu nome completo</label><input type="text" id="nome_tecnico" name="nome_tecnico" value="{{ nome_tecnico }}" required></div><div class="form-group"><label for="servico_executado">Descrição do serviço executado</label><textarea id="servico_executado" name="servico_executado" rows="6" required></textarea></div><div class="form-group"><label for="senha_cliente">Senha do cliente</label><input type="text" id="senha_cliente" name="senha_cliente"></div><div class="form-group"><label for="foto_servico">Foto do serviço executado</label><input type="file" id="foto_servico" name="foto_servico" accept="image/*" required></div><div class="form-group"><label for="foto_documento">Foto da assinatura/documento do cliente</label><input type="file" id="foto_documento" name="foto_documento" accept="image/*" required></div><button type="submit">Finalizar serviço</button></form><div class="footer"><p>© Wrubleski</p></div></div></body></html>
+"""
 LOGIN_TEMPLATE = """
 <!DOCTYPE html><html lang="pt-BR"><head><title>Admin Login</title><style>body{font-family: sans-serif; background: #f4f4f9;} .login-box{width: 300px; margin: 100px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;} input[type="password"]{width: 90%; padding: 10px; margin-top: 10px; margin-bottom: 20px;} button{padding: 10px 20px;}</style></head><body><div class="login-box"><h2>Acesso à Administração</h2><form method="post"><label for="password">Senha:</label><input type="password" id="password" name="password" required><button type="submit">Entrar</button></form></div></body></html>
 """
@@ -40,9 +48,7 @@ def form():
     endereco = request.args.get('endereco', '')
     nome_tecnico = request.args.get('nome_tecnico', '')
 
-    with open('templates/form.html', 'r', encoding='utf-8') as f:
-        template_string = f.read()
-    return render_template_string(template_string, 
+    return render_template_string(FORM_TEMPLATE, 
                                   protocolo=protocolo, 
                                   nome_cliente=nome_cliente, 
                                   endereco=endereco,
@@ -185,4 +191,3 @@ def clear_csv():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
