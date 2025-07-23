@@ -1,7 +1,7 @@
 import os
 import csv
 import base64
-from flask import Flask, request, render_template_string, jsonify, Response
+from flask import Flask, request, render_template_string, Response
 from werkzeug.utils import secure_filename
 import datetime
 from pytz import timezone
@@ -13,7 +13,7 @@ app = Flask(__name__)
 # --- Configuração do GitHub e Admin ---
 GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
 GITHUB_REPO = os.getenv('GITHUB_REPO')
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD') # Senha para a área de limpeza
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 CSV_FILE_PATH = 'submissions.csv'
 UPLOAD_FOLDER_PATH = 'uploads'
 
@@ -21,6 +21,14 @@ g = Github(GITHUB_TOKEN)
 repo = g.get_repo(GITHUB_REPO)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+# --- Templates HTML incorporados ---
+LOGIN_TEMPLATE = """
+<!DOCTYPE html><html lang="pt-BR"><head><title>Admin Login</title><style>body{font-family: sans-serif; background: #f4f4f9;} .login-box{width: 300px; margin: 100px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;} input[type="password"]{width: 90%; padding: 10px; margin-top: 10px; margin-bottom: 20px;} button{padding: 10px 20px;}</style></head><body><div class="login-box"><h2>Acesso à Administração</h2><form method="post"><label for="password">Senha:</label><input type="password" id="password" name="password" required><button type="submit">Entrar</button></form></div></body></html>
+"""
+ADMIN_TEMPLATE = """
+<!DOCTYPE html><html lang="pt-BR"><head><title>Admin</title><style>body{font-family: sans-serif; background: #f4f4f9;} .admin-box{width: 500px; margin: 50px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);} button{padding: 10px 20px; margin-top: 15px;}</style></head><body><div class="admin-box"><h1>Gerir Respostas</h1><p>Atualmente existem <strong>{{ num_lines }}</strong> respostas no ficheiro.</p><hr><h3>Apagar Respostas Antigas</h3><p>Selecione uma data. Todas as respostas <strong>anteriores</strong> a esta data serão apagadas permanentemente.</p><form action="/admin/clear" method="post"><label for="cutoff_date">Apagar registos antes de:</label><input type="date" id="cutoff_date" name="cutoff_date" required><input type="hidden" name="password" value="{{ password }}"><br><button type="submit" onclick="return confirm('Tem a certeza que deseja apagar os registos antigos? Esta ação não pode ser desfeita.')">Apagar Registos Antigos</button></form></div></body></html>
+"""
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -115,7 +123,6 @@ def get_csv():
     except GithubException:
         return "Ficheiro CSV ainda não foi criado.", 404
 
-# --- NOVAS ROTAS DE ADMINISTRAÇÃO ---
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
     if request.method == 'POST':
@@ -129,14 +136,11 @@ def admin():
             except GithubException:
                 num_lines = 0
 
-            with open('templates/admin.html', 'r', encoding='utf-8') as f:
-                template_string = f.read()
-            return render_template_string(template_string, num_lines=num_lines)
+            return render_template_string(ADMIN_TEMPLATE, num_lines=num_lines, password=password)
         else:
             return "Senha incorreta.", 403
 
-    with open('templates/login.html', 'r', encoding='utf-8') as f:
-        return f.read()
+    return render_template_string(LOGIN_TEMPLATE)
 
 @app.route('/admin/clear', methods=['POST'])
 def clear_csv():
@@ -164,7 +168,7 @@ def clear_csv():
                 else:
                     deleted_count += 1
             except (ValueError, IndexError):
-                kept_rows.append(row) # Mantém linhas com formato de data inválido
+                kept_rows.append(row)
 
         output = StringIO()
         writer = csv.writer(output)
