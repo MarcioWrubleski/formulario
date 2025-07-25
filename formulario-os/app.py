@@ -56,69 +56,91 @@ def form():
 
 @app.route('/submit', methods=['POST'])
 def submit():
-    sao_paulo_tz = timezone('America/Sao_Paulo')
-    now_sao_paulo = datetime.datetime.now(sao_paulo_tz)
-
-    data = {
-        'timestamp': now_sao_paulo.strftime('%d/%m/%Y %H:%M:%S'),
-        'protocolo': request.form.get('protocolo'),
-        'nome_tecnico': request.form.get('nome_tecnico'),
-        'servico_executado': request.form.get('servico_executado'),
-        'senha_cliente': request.form.get('senha_cliente'),
-        'foto_servico_url': '',
-        'foto_documento_url': ''
-    }
-
-    for key in ['foto_servico', 'foto_documento']:
-        if key in request.files:
-            file = request.files[key]
-            if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(f"{data['protocolo']}_{key}_{file.filename}")
-                file_content = file.read()
-                file_path_in_repo = f"{UPLOAD_FOLDER_PATH}/{filename}"
-
-                try:
-                    contents = repo.get_contents(file_path_in_repo)
-                    repo.update_file(contents.path, f"Atualiza {filename}", file_content, contents.sha)
-                except GithubException:
-                    repo.create_file(file_path_in_repo, f"Adiciona {filename}", file_content)
-
-                data[f'{key}_url'] = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{file_path_in_repo}"
-
     try:
-        file_content_obj = repo.get_contents(CSV_FILE_PATH)
-        csv_content = base64.b64decode(file_content_obj.content).decode('utf-8')
-        file_exists = True
-    except GithubException:
-        csv_content = ""
-        file_exists = False
+        sao_paulo_tz = timezone('America/Sao_Paulo')
+        now_sao_paulo = datetime.datetime.now(sao_paulo_tz)
 
-    output = StringIO()
-    fieldnames = ['Carimbo de data/hora', 'Protocolo/Assistência', 'Seu nome completo', 'Descrição do serviço executado', 'Senha do cliente', 'Foto do serviço executado', 'Foto da assinatura/documento do cliente']
-    writer = csv.DictWriter(output, fieldnames=fieldnames)
+        data = {
+            'timestamp': now_sao_paulo.strftime('%d/%m/%Y %H:%M:%S'),
+            'protocolo': request.form.get('protocolo'),
+            'nome_tecnico': request.form.get('nome_tecnico'),
+            'servico_executado': request.form.get('servico_executado'),
+            'senha_cliente': request.form.get('senha_cliente'),
+            'foto_servico_url': '',
+            'foto_documento_url': ''
+        }
 
-    if not file_exists:
-        writer.writeheader()
+        for key in ['foto_servico', 'foto_documento']:
+            if key in request.files:
+                file = request.files[key]
+                if file and file.filename != '' and allowed_file(file.filename):
+                    filename = secure_filename(f"{data['protocolo']}_{key}_{now_sao_paulo.strftime('%Y%m%d%H%M%S')}_{file.filename}")
+                    file_content = file.read()
+                    file_path_in_repo = f"{UPLOAD_FOLDER_PATH}/{filename}"
 
-    writer.writerow({
-        'Carimbo de data/hora': data['timestamp'],
-        'Protocolo/Assistência': data['protocolo'],
-        'Seu nome completo': data['nome_tecnico'],
-        'Descrição do serviço executado': data['servico_executado'],
-        'Senha do cliente': data['senha_cliente'],
-        'Foto do serviço executado': data['foto_servico_url'],
-        'Foto da assinatura/documento do cliente': data['foto_documento_url']
-    })
+                    try:
+                        # Tenta criar o ficheiro. Se já existir, a API do GitHub pode dar erro, mas o upload funciona.
+                        repo.create_file(file_path_in_repo, f"Adiciona {filename}", file_content)
+                    except GithubException as e:
+                        # Se o ficheiro já existir (status 422), ignora o erro e continua.
+                        if e.status != 422:
+                            raise e
+                    
+                    data[f'{key}_url'] = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{file_path_in_repo}"
 
-    new_csv_row = output.getvalue().splitlines()[1] + '\n' if file_exists else output.getvalue()
-    updated_csv_content = csv_content + new_csv_row
+        # --- CORREÇÃO APLICADA AQUI ---
+        
+        # 1. Tenta obter o conteúdo do CSV existente no GitHub
+        try:
+            file_content_obj = repo.get_contents(CSV_FILE_PATH)
+            csv_content = base64.b64decode(file_content_obj.content).decode('utf-8')
+            file_exists = True
+        except GithubException:
+            # Se o ficheiro não existir, começa com o conteúdo vazio
+            csv_content = ""
+            file_exists = False
 
-    if file_exists:
-        repo.update_file(CSV_FILE_PATH, "Adiciona nova resposta ao CSV", updated_csv_content.encode('utf-8'), file_content_obj.sha)
-    else:
-        repo.create_file(CSV_FILE_PATH, "Cria ficheiro CSV de respostas", updated_csv_content.encode('utf-8'))
+        # 2. Usa um buffer de memória para criar a nova linha (ou cabeçalho + linha)
+        output = StringIO()
+        fieldnames = ['Carimbo de data/hora', 'Protocolo/Assistência', 'Seu nome completo', 'Descrição do serviço executado', 'Senha do cliente', 'Foto do serviço executado', 'Foto da assinatura/documento do cliente']
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
 
-    return "<h1>Obrigado!</h1><p>A sua resposta foi enviada com sucesso.</p>"
+        # Se o ficheiro for novo, escreve o cabeçalho no buffer
+        if not file_exists:
+            writer.writeheader()
+
+        # Escreve a nova linha de dados no buffer
+        writer.writerow({
+            'Carimbo de data/hora': data['timestamp'],
+            'Protocolo/Assistência': data['protocolo'],
+            'Seu nome completo': data['nome_tecnico'],
+            'Descrição do serviço executado': data['servico_executado'],
+            'Senha do cliente': data['senha_cliente'],
+            'Foto do serviço executado': data['foto_servico_url'],
+            'Foto da assinatura/documento do cliente': data['foto_documento_url']
+        })
+
+        # 3. Pega o conteúdo do buffer e junta com o conteúdo existente
+        new_content_to_append = output.getvalue()
+        
+        # Garante que há uma quebra de linha entre o conteúdo antigo e o novo
+        if file_exists and csv_content and not csv_content.endswith('\n'):
+            updated_csv_content = csv_content + '\n' + new_content_to_append
+        else:
+            updated_csv_content = csv_content + new_content_to_append
+
+        # 4. Envia o conteúdo finalizado de volta para o GitHub
+        if file_exists:
+            repo.update_file(CSV_FILE_PATH, "Adiciona nova resposta ao CSV", updated_csv_content.encode('utf-8'), file_content_obj.sha)
+        else:
+            repo.create_file(CSV_FILE_PATH, "Cria ficheiro CSV de respostas", updated_csv_content.encode('utf-8'))
+
+        return "<h1>Obrigado!</h1><p>A sua resposta foi enviada com sucesso.</p>"
+
+    except Exception as e:
+        print(f"ERRO INESPERADO EM /submit: {e}")
+        return "<h1>Erro</h1><p>Ocorreu um erro inesperado ao processar a sua resposta. Por favor, tente novamente.</p>", 500
+
 
 @app.route('/get-csv')
 def get_csv():
